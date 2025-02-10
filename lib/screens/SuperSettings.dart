@@ -120,7 +120,7 @@ class _SupersettingsState extends State<Supersettings> {
                     icon: Icon(Icons.delete,color: Colors.red,)),
               ),
             );
-          }).toList(),
+          }),
           const Divider(height: 32,),
 
           //App permissions Section

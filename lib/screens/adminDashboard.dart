@@ -61,7 +61,7 @@ class adminDashboard extends StatelessWidget {
               children: [
                 _buildSummaryCard(
                     "Members",
-                    '120',
+                    '15',
                     Icons.people_alt),
                 _buildSummaryCard(
                     "Upcoming Events",

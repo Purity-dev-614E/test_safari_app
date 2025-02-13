@@ -91,14 +91,14 @@ class SuperAdminDashoard extends StatelessWidget {
                       child: _buildSummaryCard(
                           icon: Icons.person,
                           label: "Total Users",
-                          value: "150",
+                          value: "330",
                           color: Colors.blue)
                   ),
                   Expanded(
                       child: _buildSummaryCard(
                           icon: Icons.group,
                           label: "Total Groups",
-                          value: '12',
+                          value: '22',
                           color: Colors.green)
                   ),
 

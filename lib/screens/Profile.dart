@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
+import 'package:church_app/services/auth_services.dart';
 
 class UserProfileScreen extends StatefulWidget {
   const UserProfileScreen({super.key});
@@ -20,6 +21,11 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
         _image = File(pickedFile.path);
       }
     });
+  }
+
+  void _logout() async{
+    await AuthService().logout();
+    Navigator.pushReplacementNamed(context, '/login');
   }
 
   @override
@@ -63,9 +69,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
 
             // Logout Button
             TextButton(
-              onPressed: () {
-                // Handle logout
-              },
+              onPressed: _logout,
               child: const Text("Logout", style: TextStyle(color: Colors.red)),
             ),
           ],

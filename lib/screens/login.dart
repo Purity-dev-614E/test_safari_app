@@ -1,7 +1,9 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'auth_service.dart';
-import 'package:church_app/users.dart';
-import 'package:church_app/permissions.dart';
+import 'package:church_app/services/auth_services.dart';
+import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
+
 
 class login extends StatefulWidget {
   const login({super.key});
@@ -11,45 +13,60 @@ class login extends StatefulWidget {
 }
 
 class _loginState extends State<login> {
-
+  final AuthService _authService = AuthService();
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
   bool isLoading = false;
 
-  //simulating backendAuthentication
-
-  void _login() async  {
+  Future<void> _login() async {
     setState(() {
       isLoading = true;
     });
 
-    await Future.delayed(Duration(seconds: 2));
-    String email = emailController.text;
-    String password = passwordController.text;
-
-    User? user = await authenticateUser(email, password);
-    if (user != null) {
-      // Role-based landing page logic:
-      if (user.role == UserRole.superAdmin) {
-        Navigator.pushReplacementNamed(context, '/super_admin_dashoard');
-      } else if (user.role == UserRole.admin) {
-        Navigator.pushReplacementNamed(context, '/adminDashboard'
-        );
-      } else if (user.role == UserRole.normalUser) {
-    Navigator.pushReplacementNamed(context,  '/userDashboard');
-
-      }
-    } else {
-      // Show an error message if login fails.
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Invalid credentials. Please try again.")),
-      );
-    }
+    final response = await http.post(
+      Uri.parse("http://localhost:5000/api/auth/login"),
+      headers: {"Content-Type": "application/json"},
+      body: jsonEncode({
+        'email': emailController.text.trim(),
+        'password': passwordController.text.trim(),
+      }),
+    );
 
     setState(() {
       isLoading = false;
     });
+
+    final data = jsonDecode(response.body);
+    print('API Response: $data'); // Debugging
+
+    if (response.statusCode == 200 && data is Map<String, dynamic>) {
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+
+      // Ensure role exists and normalize it
+      String role = data.containsKey("role") && data['role'] != null
+          ? data['role'].toString().trim().toLowerCase()
+          : 'user'; // Default to 'user' if role is missing
+
+      print('Extracted role: $role'); // Debugging
+
+      await prefs.setString('auth_token', data['token']);
+      await prefs.setString('user_role', role); // FIXED - Now role is always a String
+
+      // Navigate based on role
+      if (role == "admin") {
+        Navigator.pushReplacementNamed(context, "/adminDashboard");
+      } else if (role == "super admin") {
+        Navigator.pushReplacementNamed(context, "/super_admin_dashoard"); // Fix typo
+      } else {
+        Navigator.pushReplacementNamed(context, "/userDashboard");
+      }
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(data['message'] ?? "Login failed"))
+      );
+    }
   }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -76,7 +93,7 @@ class _loginState extends State<login> {
               SizedBox(height: 100.0,),
 
               Text(
-                  'Full Name',
+                  'Email Address',
                 style: TextStyle(
                   fontSize: 20.0,
                   fontWeight: FontWeight.w100,
@@ -133,6 +150,207 @@ class _loginState extends State<login> {
                       ),
                     )
                 ),
+              ),
+              TextButton(
+                  onPressed: (){
+                    Navigator.pushNamed(context, '/signup');
+                  },
+                  child:Text('No account? Sign Up'))
+
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class signup extends StatefulWidget {
+  const signup({super.key});
+
+  @override
+  State<signup> createState() => _signupState();
+}
+
+class _signupState extends State<signup> {
+  final TextEditingController usernameController = TextEditingController();
+  final TextEditingController emailController = TextEditingController();
+  final TextEditingController passwordController = TextEditingController();
+  String? _selectedRole;
+  bool isLoading = false;
+
+  final List<String> UserRoles = [ 'admin', 'super admin', 'user'];
+
+  Future<void> _signUp() async{
+    if(_selectedRole == null){
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Please Select a Role")),
+      );
+      return;
+    }
+
+    setState(() {
+      isLoading = true;
+    });
+
+    final response =  await http.post(
+      Uri.parse(
+        "http://localhost:5000/api/auth/register"
+      ),
+      headers: {"Content-Type": "application/json"},
+      body: jsonEncode({
+        "username": usernameController.text.trim(),
+        "email": emailController.text.trim(),
+        "password": passwordController.text.trim(),
+        "role": _selectedRole
+      })
+    );
+
+    setState(() {
+      isLoading  = false;
+    });
+
+    final data = jsonDecode(response.body);
+    if(response.statusCode == 201){
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Registration Successful, Please log in'))
+      );
+      Navigator.pop(context);
+    }else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(data['message'])),
+      );
+    }
+
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return  Scaffold(
+      backgroundColor: Colors.blue[50],
+      body: Padding(
+        padding: EdgeInsets.fromLTRB(30, 100, 30, 0),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Text(
+                'Welcome to Church',
+                style: TextStyle(
+                  fontSize: 45.0,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.blue,
+                  letterSpacing: 2.5,
+                ),
+
+              ),
+              SizedBox(height: 50.0,),
+
+
+              // Text(
+              //   'Enter email Address',
+              //   style: TextStyle(
+              //     fontSize: 20.0,
+              //     fontWeight: FontWeight.w100,
+              //     color: Colors.blue,
+              //     letterSpacing: 1.5,
+              //   ),
+              // ),
+              // SizedBox(height: 20.0,),
+
+              SizedBox(
+                height: 60,
+                width: 360,
+                child: TextField(
+                  controller: emailController,
+                  decoration: InputDecoration(
+                      border: OutlineInputBorder(),
+                      labelText: 'Enter Your Email Address'
+                  ),
+                ),
+              ),
+
+              // SizedBox(height: 20.0,),
+
+              // Text(
+              //   'Enter User name',
+              //   style: TextStyle(
+              //     fontSize: 20.0,
+              //     fontWeight: FontWeight.w100,
+              //     color: Colors.blue,
+              //     letterSpacing: 1.5,
+              //   ),
+              // ),
+              SizedBox(height: 20.0,),
+
+              SizedBox(
+                height: 60,
+                width: 360,
+                child: TextField(
+                  controller: usernameController,
+                  decoration: InputDecoration(
+                      border: OutlineInputBorder(),
+                      labelText: 'Enter Your Username'
+                  ),
+                ),
+              ),
+
+              // SizedBox(height: 30.0,),
+
+
+              // Text(
+              //   'Password',
+              //   style: TextStyle(
+              //     fontSize: 20.0,
+              //     fontWeight: FontWeight.w100,
+              //     color: Colors.blue,
+              //     letterSpacing: 1.5,
+              //   ),
+              // ),
+              SizedBox(height: 20.0,),
+
+              SizedBox(
+                height: 60,
+                width: 360,
+                child: TextField(
+                  controller: passwordController,
+                  decoration: InputDecoration(
+                      border: OutlineInputBorder(),
+                      labelText: 'Password'
+                  ),
+                  obscureText: true,
+                ),
+              ),
+              SizedBox(height: 40.0,),
+
+              DropdownButton<String>(
+                value: _selectedRole,
+                hint: Text("Select Role"),
+                items: UserRoles.map((role) {
+                  return DropdownMenuItem(value: role, child: Text(role));
+                }).toList(),
+                onChanged: (value) {
+                  setState(() => _selectedRole = value);
+                },
+              ),
+
+              isLoading
+                  ?Center(child: CircularProgressIndicator(
+                color: Colors.blue,
+              )):
+              Center(
+                child: TextButton(
+                    onPressed: _signUp,
+                    child: Text(
+                      'Sign Up',
+                      style: TextStyle(
+                          fontSize: 15.0,
+                          fontWeight: FontWeight.w300,
+                          letterSpacing: 1.5
+                      ),
+                    )
+                ),
               )
 
             ],
@@ -142,3 +360,5 @@ class _loginState extends State<login> {
     );
   }
 }
+
+

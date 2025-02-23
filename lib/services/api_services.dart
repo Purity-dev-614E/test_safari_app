@@ -3,7 +3,7 @@ import 'package:http/http.dart' as http;
 import 'auth_services.dart';
 
 class ApiService{
-  final String baseUrl = 'http://localhost:500/api';
+  final String baseUrl = 'https://test-safari-backend.onrender.com';
 
   //fetch members
   Future<List<dynamic>> fetchMembers() async{

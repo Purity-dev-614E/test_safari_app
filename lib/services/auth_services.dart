@@ -3,7 +3,7 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 class AuthService {
-  final String baseUrl = 'http://localhost:5000/api/auth';
+  final String baseUrl = 'https://test-safari-backend.onrender.com/api/auth';
 
   //login function
 

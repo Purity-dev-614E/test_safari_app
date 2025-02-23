@@ -24,7 +24,7 @@ class _loginState extends State<login> {
     });
 
     final response = await http.post(
-      Uri.parse("http://localhost:5000/api/auth/login"),
+      Uri.parse("https://test-safari-backend.onrender.com/api/auth/login"),
       headers: {"Content-Type": "application/json"},
       body: jsonEncode({
         'email': emailController.text.trim(),
@@ -65,6 +65,30 @@ class _loginState extends State<login> {
           SnackBar(content: Text(data['message'] ?? "Login failed"))
       );
     }
+  }
+
+  void _showCompleteProfileDialog(){
+    showDialog(context: context,
+        barrierDismissible: false,
+        builder: (context){
+          return WillPopScope(
+            onWillPop: () async => false,
+            child: AlertDialog(
+              title: Text('complete profile'),
+              content: Text('Your profile is not quite complete, please update the details to continue'),
+              actions: [
+                TextButton(
+                    onPressed: (){
+
+                    },
+                    child: Text('Complete Now'),
+                )
+              ],
+            ),
+          );
+        }
+        );
+
   }
 
   @override
@@ -195,7 +219,7 @@ class _signupState extends State<signup> {
 
     final response =  await http.post(
       Uri.parse(
-        "http://localhost:5000/api/auth/register"
+        "https://test-safari-backend.onrender.com/api/auth/register"
       ),
       headers: {"Content-Type": "application/json"},
       body: jsonEncode({
